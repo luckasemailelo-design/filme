@@ -97,7 +97,6 @@
         let isSeeking = false;
         let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        // Carregar progresso salvo
         fetch(`/progresso/${canalId}`)
             .then(res => res.json())
             .then(data => {
@@ -109,7 +108,6 @@
             })
             .catch(err => console.error('Erro ao carregar progresso:', err));
 
-        // Função para salvar progresso
         function salvarProgresso(forcar = false) {
             const current = Math.floor(video.currentTime);
             if (current > 0 && (forcar || Math.abs(current - lastSavedTime) >= 10)) {
@@ -122,7 +120,6 @@
             }
         }
 
-        // Atualizar barra de progresso e tempo
         function updateProgress() {
             if (!video.duration) return;
             const percent = (video.currentTime / video.duration) * 100;
@@ -151,7 +148,6 @@
         video.addEventListener('canplay', () => spinner.style.display = 'none');
         video.addEventListener('error', (e) => console.error('Erro no vídeo:', e));
 
-        // Play/Pause
         function togglePlay() {
             if (video.paused) { video.play(); playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; bigPlayBtn.style.display = 'none'; }
             else { video.pause(); playPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; bigPlayBtn.style.display = 'flex'; }
@@ -161,7 +157,6 @@
         video.addEventListener('play', () => { playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; bigPlayBtn.style.display = 'none'; });
         video.addEventListener('pause', () => { playPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; bigPlayBtn.style.display = 'flex'; });
 
-        // Volume
         let lastVolume = 1;
         volumeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -175,7 +170,6 @@
         }
         video.addEventListener('volumechange', updateVolumeIcon);
 
-        // Fullscreen
         fullscreenBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (!document.fullscreenElement) {
@@ -189,7 +183,6 @@
             if (!document.fullscreenElement && isMobile && screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
         });
 
-        // Próximo episódio
         {% if proximo_episodio %}
         document.getElementById('next-episode-btn').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -197,7 +190,6 @@
         });
         {% endif %}
 
-        // Barra de progresso interativa
         function handleProgressInteraction(e) { e.preventDefault(); e.stopPropagation(); isSeeking = true; updateProgressFromEvent(e); }
         function updateProgressFromEvent(e) {
             const rect = progressContainer.getBoundingClientRect();
@@ -213,7 +205,6 @@
         document.addEventListener('mouseup', () => isSeeking = false);
         document.addEventListener('touchend', () => isSeeking = false);
 
-        // Duplo clique para avançar/voltar
         let clickTimeout = null, isDoubleTap = false;
         videoContainer.addEventListener('click', (e) => {
             if (e.target.closest('.control-btn') || e.target.closest('.progress-bar-container')) return;
@@ -231,7 +222,6 @@
         });
         videoContainer.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
-        // Controles visíveis
         function showControls() {
             controls.classList.add('active');
             clearTimeout(hideControlsTimeout);
@@ -248,7 +238,6 @@
             setTimeout(() => el.classList.remove('show'), 300);
         }
 
-        // Teclado
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             switch(e.key) {
@@ -262,19 +251,8 @@
             }
         });
 
-        // Favoritar
-        favoritoBtn.addEventListener('click', function() {
-            const id = this.dataset.id;
-            fetch(`/favoritar/${id}`, {method: 'POST'})
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'adicionado') this.classList.add('favorito-ativo');
-                    else this.classList.remove('favorito-ativo');
-                })
-                .catch(err => console.error('Erro ao favoritar:', err));
-        });
+        // REMOVIDO O LISTENER LOCAL DO BOTÃO DE FAVORITO
 
-        // Verificar se já é favorito
         fetch('/api/favoritos')
             .then(res => res.json())
             .then(favoritos => {
@@ -290,7 +268,6 @@
             })
             .catch(err => console.error('Erro ao carregar favoritos:', err));
 
-        // Salvar progresso ao sair
         window.addEventListener('beforeunload', () => salvarProgresso(true));
     });
 </script>
