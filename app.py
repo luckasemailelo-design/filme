@@ -203,7 +203,8 @@ def register():
         is_admin = request.form.get('is_admin') == 'on'
 
         if Usuario.query.filter_by(email=email).first():
-            return render_template('register.html', erro='Email já cadastrado')
+            # Redireciona de volta para admin com mensagem de erro
+            return redirect(url_for('admin', erro='Email já cadastrado'))
 
         hash_senha = generate_password_hash(senha)
         expira_em = None
@@ -220,7 +221,8 @@ def register():
         db.session.add(usuario)
         db.session.commit()
         return redirect(url_for('admin'))
-    return render_template('register.html')
+    # Se for GET, redireciona para admin (não deveria ser acessado diretamente)
+    return redirect(url_for('admin'))
 
 @app.route('/logout')
 def logout():

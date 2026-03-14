@@ -1207,6 +1207,144 @@ main {
     text-align: center;
 }
 
+/* ===== HERO (PÁGINA INICIAL) ===== */
+.hero-section {
+    margin-bottom: 3rem;
+}
+.hero-container {
+    position: relative;
+    width: 100%;
+    height: 70vh;
+    max-height: 600px;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.hero-item {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+    padding: 3rem;
+    color: white;
+    text-decoration: none;
+}
+.hero-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.2) 100%);
+    z-index: 1;
+}
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 600px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+}
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+}
+.hero-subtitle {
+    font-size: 1.3rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.hero-badge {
+    display: inline-block;
+    background: rgba(229,9,20,0.9);
+    color: white;
+    padding: 0.3rem 1rem;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+}
+.hero-btn {
+    display: inline-block;
+    background: #e50914;
+    color: white;
+    padding: 0.8rem 2.5rem;
+    border-radius: 40px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.2s ease-in-out;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.hero-btn:hover {
+    background: #f40612;
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(229, 9, 20, 0.4);
+}
+.hero-btn:active {
+    transform: scale(0.98);
+}
+.hero-indicators {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 3;
+    display: flex;
+    gap: 10px;
+}
+.hero-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+.hero-indicator.active {
+    background: #e50914;
+    transform: scale(1.3);
+}
+.hero-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    backdrop-filter: blur(4px);
+}
+.hero-arrow:hover {
+    background: rgba(229,9,20,0.9);
+}
+.hero-arrow.left {
+    left: 20px;
+}
+.hero-arrow.right {
+    right: 20px;
+}
+
 /* ===== RESPONSIVIDADE GERAL ===== */
 @media (max-width: 768px) {
     /* Navbar */
@@ -1435,140 +1573,172 @@ main {
     }
 }
 
-/* ===== HERO (PÁGINA INICIAL) ===== */
-.hero-section {
-    margin-bottom: 3rem;
+@media (min-width: 769px) {
+    .page-with-sidebar {
+        display: flex;
+        gap: 2rem;
+        align-items: flex-start;
+    }
+    .sidebar {
+        flex: 0 0 280px;
+        position: sticky;
+        top: 80px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+    }
+    .main-content {
+        flex: 1;
+        min-width: 0; /* ESSENCIAL: impede que o conteúdo force o container a crescer além do disponível */
+        width: 100%;
+    }
+    .horizontal-scroll {
+        width: 100%;
+        overflow-x: auto;
+        display: flex;
+        gap: 0.8rem;
+        padding: 0.5rem 0 1rem;
+    }
+    .card {
+        width: 180px; /* tamanho fixo para os cards */
+        flex: 0 0 auto;
+    }
 }
-.hero-container {
-    position: relative;
+
+.main-content {
+    min-width: 0; /* já existe, mas vamos garantir */
     width: 100%;
-    height: 70vh;
-    max-height: 600px;
-    background: #000;
+}
+
+.horizontal-scroll {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* ===== PÁGINAS DE AUTENTICAÇÃO ===== */
+.auth-page {
+    background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://via.placeholder.com/1920x1080') center/cover;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 1rem;
+}
+
+.auth-card {
+    background-color: rgba(0,0,0,0.85);
+    padding: 2rem;
     border-radius: 8px;
-    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
-.hero-item {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    align-items: flex-end;
-    padding: 3rem;
-    color: white;
-    text-decoration: none;
-}
-.hero-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.2) 100%);
-    z-index: 1;
-}
-.hero-content {
-    position: relative;
-    z-index: 2;
-    max-width: 600px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-}
-.hero-title {
-    font-size: 3.5rem;
-    font-weight: 700;
+
+.auth-card h1 {
+    text-align: center;
+    color: #e50914;
     margin-bottom: 0.5rem;
-    line-height: 1.2;
-    letter-spacing: -0.5px;
+    font-size: 2rem;
 }
-.hero-subtitle {
-    font-size: 1.3rem;
-    opacity: 0.9;
+
+.auth-card h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+    color: #fff;
+}
+
+.auth-form .form-group {
     margin-bottom: 1rem;
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 1px;
 }
-.hero-badge {
-    display: inline-block;
-    background: rgba(229,9,20,0.9);
-    color: white;
-    padding: 0.3rem 1rem;
-    border-radius: 30px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    text-transform: uppercase;
+
+.auth-form label {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: #ccc;
+    font-size: 0.95rem;
 }
-.hero-btn {
-    display: inline-block;
-    background: #e50914;
-    color: white;
-    padding: 0.8rem 2.5rem;
-    border-radius: 40px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 1.1rem;
-    transition: all 0.2s ease-in-out;
+
+.auth-form input {
+    width: 100%;
+    padding: 0.8rem;
     border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid transparent;
+    transition: border 0.2s;
+    font-size: 1rem;
 }
-.hero-btn:hover {
-    background: #f40612;
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(229, 9, 20, 0.4);
+
+.auth-form input:focus {
+    outline: none;
+    border-color: #e50914;
 }
-.hero-btn:active {
-    transform: scale(0.98);
-}
-.hero-indicators {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    z-index: 3;
-    display: flex;
-    gap: 10px;
-}
-.hero-indicator {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.5);
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
-}
-.hero-indicator.active {
-    background: #e50914;
-    transform: scale(1.3);
-}
-.hero-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 50px;
-    height: 50px;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 3;
+
+.auth-form .checkbox {
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-    backdrop-filter: blur(4px);
+    gap: 0.5rem;
 }
-.hero-arrow:hover {
-    background: rgba(229,9,20,0.9);
+
+.auth-form .checkbox input {
+    width: auto;
 }
-.hero-arrow.left {
-    left: 20px;
+
+.auth-form .checkbox label {
+    margin-bottom: 0;
 }
-.hero-arrow.right {
-    right: 20px;
+
+.auth-form .btn {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.auth-link {
+    text-align: center;
+    margin-top: 1rem;
+    color: #ccc;
+}
+
+.auth-link a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.auth-link a:hover {
+    text-decoration: underline;
+}
+
+.alert {
+    padding: 0.8rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.alert.error {
+    background-color: #e50914;
+    color: #fff;
+}
+
+/* Botão outline (já pode existir, mas garantimos) */
+.btn-outline {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    transition: all 0.2s ease-in-out;
+    display: inline-block;
+    text-align: center;
+    padding: 0.6rem 1.5rem;
+    border-radius: 30px;
+    text-decoration: none;
+}
+
+.btn-outline:hover {
+    transform: scale(1.05);
+    background: rgba(229, 9, 20, 0.2);
+    border-color: #e50914;
 }
