@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block title %}Filmes{% endblock %}
+{% block content %}
+<div class="page-with-sidebar">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Filtros</h2>
+            <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="sidebar-search">
+            <input type="text" id="search-input" class="search-input" placeholder="Buscar filmes...">
+            <button id="search-btn" class="search-btn">Buscar</button>
+        </div>
+        <div class="filter-group">
+            <div class="filter-header" onclick="toggleAnoFilter(this)">
+                <span>Ano</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="filter-options" id="ano-filter" style="display: none;">
+                <ul id="ano-list">
+                    <li><a href="#" data-ano="" class="ano-link active">Todos</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="sidebar-categories">
+            <h3>Categorias</h3>
+            <ul id="categorias-list">
+                <li><a href="#" data-categoria="todos" class="categoria-link active">Todos</a></li>
+            </ul>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" style="display: none;">
+            <i class="fas fa-filter"></i> Filtrar
+        </button>
+
+        <div id="secoes-fixas">
+            <h2 class="section-title">Lançamento</h2>
+            <div class="horizontal-scroll" id="lancamento"></div>
+            <h2 class="section-title">Comédia</h2>
+            <div class="horizontal-scroll" id="comedia"></div>
+            <h2 class="section-title">Ação</h2>
+            <div class="horizontal-scroll" id="acao"></div>
+            <h2 class="section-title">Romance</h2>
+            <div class="horizontal-scroll" id="romance"></div>
+            <h2 class="section-title">Todos os filmes (A-Z)</h2>
+            <div class="category-grid" id="todos-filmes"></div>
+            <div class="load-more-container">
+                <button id="load-more-todos" class="btn btn-outline" style="display: none;">Carregar Mais</button>
+            </div>
+        </div>
+
+        <div id="categoria-content" style="display: none;">
+            <h1 class="section-title" id="categoria-titulo"></h1>
+            <div class="category-grid" id="categoria-grid"></div>
+            <div class="load-more-container">
+                <button id="load-more-categoria" class="btn btn-outline" style="display: none;">Carregar Mais</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+    .page-with-sidebar { display: flex; gap: 2rem; }
+    .sidebar { flex: 0 0 250px; background: #1a1a1a; border-radius: 8px; padding: 1.5rem; height: fit-content; position: sticky; top: 80px; }
+    .sidebar h3 { color: #fff; margin-bottom: 0.5rem; }
+    .sidebar ul { list-style: none; padding: 0; margin: 0; }
+    .sidebar li { margin: 0.2rem 0; }
+    .sidebar .categoria-link, .sidebar .ano-link { display: block; padding: 0.5rem; background: #2a2a2a; border-radius: 4px; color: #ddd; text-decoration: none; transition: background 0.2s; }
+    .sidebar .categoria-link:hover, .sidebar .ano-link:hover { background: #e50914; color: #fff; }
+    .sidebar .categoria-link.active, .sidebar .ano-link.active { background: #e50914; color: #fff; font-weight: bold; }
+    .filter-group { margin-bottom: 1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+    .filter-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; cursor: pointer; color: #fff; font-weight: 500; }
+    .filter-header i { transition: transform 0.3s; }
+    .filter-header.active i { transform: rotate(180deg); }
+    .filter-options { padding: 0.5rem 0; }
+    .main-content { flex: 1; }
+    @media (max-width: 768px) {
+        .page-with-sidebar { flex-direction: column; }
+        .sidebar { position: static; width: 100%; }
+        .nav-toggle { display: flex !important; }
+    }
+</style>
+
+<script>
+    let currentPage = 1;
+    let currentCategoria = 'todos';
+    let currentAno = '';
+
+    const secoesFixas = document.getElementById('secoes-fixas');
+    const categoriaContent = document.getElementById('categoria-content');
+    const categoriaTitulo = document.getElementById('categoria-titulo');
+    const categoriaGrid = document.getElementById('categoria-grid');
+    const loadMoreTodos = document.getElementById('load-more-todos');
+    const loadMoreCategoria = document.getElementById('load-more-categoria');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarToggle = document.getElementById('sidebar-toggle-btn');
+
+    window.toggleAnoFilter = function(header) {
+        header.classList.toggle('active');
+        const options = document.getElementById('ano-filter');
+        options.style.display = options.style.display === 'none' ? 'block' : 'none';
+    };
+
+    fetch('/api/filmes/anos')
+        .then(res => res.json())
+        .then(anos => {
+            const lista = document.getElementById('ano-list');
+            anos.forEach(ano => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="#" data-ano="${ano}" class="ano-link">${ano}</a>`;
+                lista.appendChild(li);
+            });
+        });
+
+    fetch('/api/filmes/categorias')
+        .then(res => res.json())
+        .then(categorias => {
+            const lista = document.getElementById('categorias-list');
+            categorias.forEach(cat => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="#" data-categoria="${cat}" class="categoria-link">${cat}</a>`;
+                lista.appendChild(li);
+            });
+        });
+
+    function carregarSecoesFixas() {
+        fetch('/api/filmes/lancamento')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('lancamento').innerHTML = '';
+                data.forEach(item => document.getElementById('lancamento').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                carregarEstadoFavoritos();
+            });
+        fetch('/api/filmes/categoria/Comédia')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('comedia').innerHTML = '';
+                data.forEach(item => document.getElementById('comedia').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                carregarEstadoFavoritos();
+            });
+        fetch('/api/filmes/categoria/Thriller')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('acao').innerHTML = '';
+                data.forEach(item => document.getElementById('acao').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                carregarEstadoFavoritos();
+            });
+        fetch('/api/filmes/categoria/Romance')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('romance').innerHTML = '';
+                data.forEach(item => document.getElementById('romance').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                carregarEstadoFavoritos();
+            });
+        carregarListaTodos(1);
+    }
+
+    function carregarListaTodos(pagina) {
+        let url = `/api/filmes/lista?pagina=${pagina}`;
+        if (currentAno) url += `&ano=${currentAno}`;
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('todos-filmes');
+                if (pagina === 1) container.innerHTML = '';
+                data.itens.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                carregarEstadoFavoritos();
+                if (data.pagina < data.total_paginas) {
+                    loadMoreTodos.style.display = 'block';
+                    loadMoreTodos.dataset.page = data.pagina + 1;
+                } else {
+                    loadMoreTodos.style.display = 'none';
+                }
+            });
+    }
+
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('.categoria-link');
+        if (link) {
+            e.preventDefault();
+            document.querySelectorAll('.categoria-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            const categoria = link.dataset.categoria;
+            currentCategoria = categoria;
+            currentPage = 1;
+            if (categoria === 'todos') {
+                secoesFixas.style.display = 'block';
+                categoriaContent.style.display = 'none';
+                carregarListaTodos(1);
+            } else {
+                secoesFixas.style.display = 'none';
+                categoriaContent.style.display = 'block';
+                categoriaTitulo.textContent = `Filmes - ${categoria}`;
+                carregarCategoria(categoria, 1);
+            }
+        }
+        const anoLink = e.target.closest('.ano-link');
+        if (anoLink) {
+            e.preventDefault();
+            document.querySelectorAll('.ano-link').forEach(l => l.classList.remove('active'));
+            anoLink.classList.add('active');
+            currentAno = anoLink.dataset.ano;
+            currentPage = 1;
+            if (currentCategoria === 'todos') {
+                document.getElementById('todos-filmes').innerHTML = '';
+                carregarListaTodos(1);
+            } else {
+                categoriaGrid.innerHTML = '';
+                carregarCategoria(currentCategoria, 1);
+            }
+        }
+    });
+
+    function carregarCategoria(categoria, pagina) {
+        let url = `/api/filmes/categoria/${encodeURIComponent(categoria)}/lista?pagina=${pagina}`;
+        if (currentAno) url += `&ano=${currentAno}`;
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (pagina === 1) categoriaGrid.innerHTML = '';
+                data.itens.forEach(item => categoriaGrid.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                carregarEstadoFavoritos();
+                if (data.pagina < data.total_paginas) {
+                    loadMoreCategoria.style.display = 'block';
+                    loadMoreCategoria.dataset.page = data.pagina + 1;
+                } else {
+                    loadMoreCategoria.style.display = 'none';
+                }
+            });
+    }
+
+    loadMoreTodos.addEventListener('click', function() {
+        carregarListaTodos(parseInt(this.dataset.page));
+    });
+    loadMoreCategoria.addEventListener('click', function() {
+        carregarCategoria(currentCategoria, parseInt(this.dataset.page));
+    });
+
+    function isMobile() { return window.innerWidth <= 768; }
+    function openSidebar() { sidebar.classList.remove('closed'); sidebar.classList.add('open'); sidebarToggle.style.display = 'none'; }
+    function closeSidebar() { sidebar.classList.remove('open'); sidebar.classList.add('closed'); if (isMobile()) sidebarToggle.style.display = 'block'; }
+    if (isMobile()) {
+        sidebar.classList.add('closed');
+        sidebarToggle.style.display = 'block';
+        sidebarToggle.addEventListener('click', openSidebar);
+        sidebarClose.addEventListener('click', closeSidebar);
+    } else {
+        sidebar.classList.remove('closed', 'open');
+    }
+    document.querySelectorAll('.categoria-link, .ano-link').forEach(link => {
+        link.addEventListener('click', function() { if (isMobile()) closeSidebar(); });
+    });
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('closed', 'open');
+            sidebarToggle.style.display = 'none';
+        } else {
+            sidebar.classList.add('closed');
+            sidebar.classList.remove('open');
+            sidebarToggle.style.display = 'block';
+        }
+    });
+
+    carregarSecoesFixas();
+    window.setupSearch('search-input', 'search-btn', function(termo) {
+        if (termo.trim() === '') return;
+        window.location.href = `/busca?q=${encodeURIComponent(termo)}`;
+    });
+</script>
+{% endblock %}

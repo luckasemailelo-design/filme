@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Início{% endblock %}
+{% block content %}
+
+<!-- Seção Destaque (5 mais assistidos globalmente) -->
+<section class="hero-section">
+    <div class="hero-container" id="hero-container">
+        <!-- Será preenchido via JS -->
+    </div>
+</section>
+
+<!-- Filmes recomendados -->
+<h2 class="section-title">Filmes recomendados</h2>
+<div class="horizontal-scroll" id="filmes-recomendados"></div>
+
+<!-- Séries recomendadas -->
+<h2 class="section-title">Séries recomendadas</h2>
+<div class="horizontal-scroll" id="series-recomendadas"></div>
+
+<!-- Assistido recentemente -->
+<h2 class="section-title">Assistido recentemente</h2>
+<div class="horizontal-scroll" id="recentes"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+    /* Estilos para o hero */
+    .hero-section { margin-bottom: 3rem; }
+    .hero-container { position: relative; width: 100%; height: 70vh; max-height: 600px; background: #000; border-radius: 8px; overflow: hidden; }
+    .hero-item { position: relative; width: 100%; height: 100%; background-size: cover; background-position: center; display: flex; align-items: flex-end; padding: 3rem; color: white; text-decoration: none; }
+    .hero-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.2) 100%); z-index: 1; }
+    .hero-content { position: relative; z-index: 2; max-width: 600px; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
+    .hero-title { font-size: 3.5rem; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.2; letter-spacing: -0.5px; }
+    .hero-subtitle { font-size: 1.3rem; opacity: 0.9; margin-bottom: 1rem; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; }
+    .hero-badge { display: inline-block; background: rgba(229,9,20,0.9); color: white; padding: 0.3rem 1rem; border-radius: 30px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; text-transform: uppercase; }
+    .hero-btn { display: inline-block; background: #e50914; color: white; padding: 0.8rem 2.5rem; border-radius: 40px; text-decoration: none; font-weight: 600; font-size: 1.1rem; transition: background 0.2s, transform 0.1s; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .hero-btn:hover { background: #f40612; transform: scale(1.05); }
+    .hero-indicators { position: absolute; bottom: 20px; right: 20px; z-index: 3; display: flex; gap: 10px; }
+    .hero-indicator { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: background 0.2s, transform 0.1s; }
+    .hero-indicator.active { background: #e50914; transform: scale(1.3); }
+    .hero-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; z-index: 3; display: flex; align-items: center; justify-content: center; transition: background 0.2s; backdrop-filter: blur(4px); }
+    .hero-arrow:hover { background: rgba(229,9,20,0.9); }
+    .hero-arrow.left { left: 20px; }
+    .hero-arrow.right { right: 20px; }
+    @media (max-width: 768px) {
+        .hero-container { height: 50vh; }
+        .hero-item { padding: 1.5rem; }
+        .hero-title { font-size: 2.2rem; }
+        .hero-subtitle { font-size: 1rem; }
+        .hero-btn { padding: 0.6rem 1.5rem; font-size: 0.9rem; }
+        .hero-arrow { width: 40px; height: 40px; font-size: 20px; }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Carregar destaques
+        fetch('/api/mais-assistidos')
+            .then(res => res.json())
+            .then(itens => {
+                const container = document.getElementById('hero-container');
+                if (!itens.length) {
+                    container.innerHTML = '<p class="empty-message">Nenhum destaque no momento.</p>';
+                    return;
+                }
+                let html = '';
+                itens.forEach((item, index) => {
+                    let link;
+                    if (item.temporada !== null && item.episodio !== null) {
+                        link = `/play/${item.id}`;
+                    } else if (item.tipo === 'serie') {
+                        link = `/serie/${encodeURIComponent(item.serie_nome)}`;
+                    } else {
+                        link = `/play/${item.id}`;
+                    }
+                    let titulo = '', subtitulo = '', badge = '';
+                    if (item.tipo === 'serie' && item.episodio !== null) {
+                        titulo = item.serie_nome;
+                        subtitulo = `Episódio ${item.episodio}`;
+                        badge = 'Série';
+                    } else if (item.tipo === 'serie') {
+                        titulo = item.serie_nome;
+                        subtitulo = 'Série';
+                    } else if (item.tipo === 'filme') {
+                        titulo = item.nome;
+                        subtitulo = item.categoria || 'Filme';
+                        badge = 'Filme';
+                    } else {
+                        titulo = item.nome;
+                        subtitulo = item.categoria || '';
+                    }
+                    html += `
+                        <div class="hero-item" style="background-image: url('${item.logo || '/static/images/placeholder.png'}');" data-index="${index}">
+                            <div class="hero-content">
+                                ${badge ? `<span class="hero-badge">${badge}</span>` : ''}
+                                <h2 class="hero-title">${titulo}</h2>
+                                <p class="hero-subtitle">${subtitulo}</p>
+                                <a href="${link}" class="hero-btn">Assistir</a>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html + `
+                    <button class="hero-arrow left" id="hero-prev"><i class="fas fa-chevron-left"></i></button>
+                    <button class="hero-arrow right" id="hero-next"><i class="fas fa-chevron-right"></i></button>
+                    <div class="hero-indicators" id="hero-indicators">
+                        ${itens.map((_, i) => `<span class="hero-indicator ${i === 0 ? 'active' : ''}" data-index="${i}"></span>`).join('')}
+                    </div>
+                `;
+
+                let currentIndex = 0;
+                const items = container.querySelectorAll('.hero-item');
+                const indicators = container.querySelectorAll('.hero-indicator');
+                const total = items.length;
+                let autoPlayInterval;
+
+                function showItem(index) {
+                    items.forEach((item, i) => { item.style.display = i === index ? 'flex' : 'none'; });
+                    indicators.forEach((ind, i) => { ind.classList.toggle('active', i === index); });
+                    currentIndex = index;
+                }
+                function nextItem() { showItem((currentIndex + 1) % total); }
+                function prevItem() { showItem((currentIndex - 1 + total) % total); }
+                function resetAutoPlay() { clearInterval(autoPlayInterval); autoPlayInterval = setInterval(nextItem, 10000); }
+
+                showItem(0);
+                resetAutoPlay();
+
+                document.getElementById('hero-prev').addEventListener('click', () => { prevItem(); resetAutoPlay(); });
+                document.getElementById('hero-next').addEventListener('click', () => { nextItem(); resetAutoPlay(); });
+                indicators.forEach(ind => {
+                    ind.addEventListener('click', (e) => { showItem(parseInt(e.target.dataset.index)); resetAutoPlay(); });
+                });
+            })
+            .catch(err => {
+                console.error('Erro ao carregar destaques:', err);
+                document.getElementById('hero-container').innerHTML = '<p class="error">Erro ao carregar destaques.</p>';
+            });
+
+        // Carregar filmes e séries recomendadas e assistidos recentemente
+        fetch('/api/inicio')
+            .then(res => res.json())
+            .then(data => {
+                const filmesRec = document.getElementById('filmes-recomendados');
+                filmesRec.innerHTML = '';
+                data.filmes_recomendados.forEach(item => filmesRec.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+
+                const seriesRec = document.getElementById('series-recomendadas');
+                seriesRec.innerHTML = '';
+                data.series_recomendadas.forEach(item => seriesRec.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+
+                const recentes = document.getElementById('recentes');
+                recentes.innerHTML = '';
+                data.assistido_recentemente.forEach(item => recentes.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+
+                if (typeof carregarEstadoFavoritos === 'function') {
+                    carregarEstadoFavoritos();
+                }
+            })
+            .catch(err => {
+                console.error('Erro ao carregar recomendações:', err);
+                document.querySelectorAll('.horizontal-scroll').forEach(el => {
+                    el.innerHTML = '<p class="error">Erro ao carregar.</p>';
+                });
+            });
+
+        if (typeof adicionarSetasScroll === 'function') {
+            document.querySelectorAll('.horizontal-scroll').forEach(container => {
+                adicionarSetasScroll(container);
+            });
+        }
+    });
+</script>
+{% endblock %}

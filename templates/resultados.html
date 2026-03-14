@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Resultados da busca{% endblock %}
+{% block content %}
+<h1 class="section-title">Resultados para "{{ termo }}"</h1>
+<div class="resultados-info" id="resultados-info">Carregando...</div>
+<div class="category-grid" id="resultados-grid"></div>
+<div class="load-more-container">
+    <button id="load-more" class="btn btn-outline" style="display: none;">Carregar Mais</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    const termo = "{{ termo }}";
+    let currentPage = 1;
+    function carregarResultados(pagina) {
+        fetch(`/api/busca?q=${encodeURIComponent(termo)}&pagina=${pagina}`)
+            .then(res => res.json())
+            .then(data => {
+                const grid = document.getElementById('resultados-grid');
+                const info = document.getElementById('resultados-info');
+                info.textContent = `Encontrados ${data.total} resultados.`;
+                if (pagina === 1) grid.innerHTML = '';
+                data.itens.forEach(item => grid.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                carregarEstadoFavoritos();
+                const btn = document.getElementById('load-more');
+                if (data.pagina < data.total_paginas) {
+                    btn.style.display = 'block';
+                    btn.dataset.page = data.pagina + 1;
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
+    }
+    carregarResultados(1);
+    document.getElementById('load-more').addEventListener('click', function() {
+        carregarResultados(parseInt(this.dataset.page));
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Meu Perfil{% endblock %}
+{% block content %}
+<div class="profile-container">
+    <h1>Meu Perfil</h1>
+    <div class="profile-card">
+        <div class="profile-info">
+            <p><strong>Nome:</strong> {{ usuario.nome }}</p>
+            <p><strong>Email:</strong> {{ usuario.email }}</p>
+        </div>
+        <div class="profile-stats">
+            <h3>Estatísticas</h3>
+            <p>Favoritos: <span id="fav-count">0</span></p>
+            <p>Assistidos: <span id="watched-count">0</span></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    fetch('/api/favoritos')
+        .then(res => res.json())
+        .then(data => document.getElementById('fav-count').textContent = data.length);
+    fetch('/api/progresso/total') // se existir, ou apenas deixe como está
+        .catch(() => {});
+</script>
+{% endblock %}
