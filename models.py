@@ -10,6 +10,7 @@ class Usuario(db.Model):
     ativo = db.Column(db.Boolean, default=True)
     expira_em = db.Column(db.DateTime, nullable=True)
     ultimo_acesso = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    profile_pic = db.Column(db.String(200), nullable=True)  # caminho da foto de perfil
     favoritos = db.relationship('Favorito', backref='usuario', lazy=True)
     progressos = db.relationship('Progresso', backref='usuario', lazy=True)
 

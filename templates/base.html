@@ -20,8 +20,13 @@
                 {% if usuario_atual and usuario_atual.is_admin %}
                     <li><a href="{{ url_for('admin') }}">Admin</a></li>
                 {% endif %}
-                <li><a href="{{ url_for('favoritos') }}">Minha Lista</a></li>
-                <li><a href="{{ url_for('perfil') }}"><i class="fas fa-user"></i></a></li>
+                <li><a href="{{ url_for('perfil') }}">
+                    {% if usuario_atual and usuario_atual.profile_pic %}
+                        <img src="{{ url_for('static', filename=usuario_atual.profile_pic) }}" alt="Perfil" class="profile-avatar">
+                    {% else %}
+                        <i class="fas fa-user-circle"></i>
+                    {% endif %}
+                </a></li>
                 <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i></a></li>
             </ul>
             <div class="nav-toggle" id="nav-toggle">

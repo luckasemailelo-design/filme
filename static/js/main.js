@@ -45,9 +45,14 @@ window.cardTemplate = function(item) {
 
 // Carregar estado dos favoritos
 function carregarEstadoFavoritos() {
+    console.log('Carregando estado dos favoritos...');
     fetch('/api/favoritos')
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error('Erro ao buscar favoritos');
+            return res.json();
+        })
         .then(favoritos => {
+            console.log('Favoritos recebidos:', favoritos);
             const favoritosIds = new Set(favoritos.map(f => f.id));
             document.querySelectorAll('.favorito-btn, .favorito-btn-large').forEach(btn => {
                 const id = parseInt(btn.dataset.id);
@@ -61,41 +66,72 @@ function carregarEstadoFavoritos() {
         .catch(err => console.error('Erro ao carregar favoritos:', err));
 }
 
-// Favoritar
+// Favoritar (delegação de eventos)
 document.addEventListener('click', function(e) {
     const btn = e.target.closest('.favorito-btn, .favorito-btn-large');
     if (!btn) return;
+
     e.preventDefault();
     e.stopPropagation();
+
     const id = btn.dataset.id;
+    console.log('Clicou no botão favoritar, ID:', id);
+
     fetch(`/favoritar/${id}`, { method: 'POST' })
-        .then(res => {
-            if (!res.ok) throw new Error('Erro ao favoritar');
+        .then(async res => {
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.erro || 'Erro ao favoritar');
+            }
             return res.json();
         })
         .then(data => {
+            console.log('Resposta do servidor:', data);
             if (data.status === 'adicionado') {
                 btn.classList.add('favorito-ativo');
             } else {
                 btn.classList.remove('favorito-ativo');
             }
+            // Atualiza todos os botões (opcional)
             carregarEstadoFavoritos();
         })
         .catch(err => {
-            console.error('Erro:', err);
+            console.error('Erro no favoritar:', err);
             alert('Falha ao favoritar. Tente novamente.');
         });
 });
 
+// Carregar estado dos favoritos
+function carregarEstadoFavoritos() {
+    console.log('Carregando estado dos favoritos...');
+    fetch('/api/favoritos')
+        .then(res => {
+            if (!res.ok) throw new Error('Erro ao buscar favoritos');
+            return res.json();
+        })
+        .then(favoritos => {
+            console.log('Favoritos recebidos:', favoritos);
+            const favoritosIds = new Set(favoritos.map(f => f.id));
+            document.querySelectorAll('.favorito-btn, .favorito-btn-large').forEach(btn => {
+                const id = parseInt(btn.dataset.id);
+                if (favoritosIds.has(id)) {
+                    btn.classList.add('favorito-ativo');
+                } else {
+                    btn.classList.remove('favorito-ativo');
+                }
+            });
+        })
+        .catch(err => console.error('Erro ao carregar favoritos:', err));
+}
 // Função para pesquisa com Enter
-window.setupSearch = function(inputId, btnId) {
+window.setupSearch = function(inputId, btnId, callback) {
     const input = document.getElementById(inputId);
     const btn = document.getElementById(btnId);
     if (!input) return;
     const performSearch = () => {
         const term = input.value.trim();
         if (term !== '') {
-            window.location.href = `/busca?q=${encodeURIComponent(term)}`;
+            callback(term);
         }
     };
     input.addEventListener('keypress', function(e) {

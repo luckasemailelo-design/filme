@@ -9,6 +9,10 @@
     </div>
 </section>
 
+<!-- Assistido recentemente -->
+<h2 class="section-title">Assistido recentemente</h2>
+<div class="horizontal-scroll" id="recentes"></div>
+
 <!-- Filmes recomendados -->
 <h2 class="section-title">Filmes recomendados</h2>
 <div class="horizontal-scroll" id="filmes-recomendados"></div>
@@ -16,10 +20,6 @@
 <!-- Séries recomendadas -->
 <h2 class="section-title">Séries recomendadas</h2>
 <div class="horizontal-scroll" id="series-recomendadas"></div>
-
-<!-- Assistido recentemente -->
-<h2 class="section-title">Assistido recentemente</h2>
-<div class="horizontal-scroll" id="recentes"></div>
 
 {% endblock %}
 
@@ -136,6 +136,7 @@
                 recentes.innerHTML = '';
                 data.assistido_recentemente.forEach(item => recentes.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
 
+                // Atualiza estado dos favoritos e setas
                 if (typeof carregarEstadoFavoritos === 'function') {
                     carregarEstadoFavoritos();
                 }

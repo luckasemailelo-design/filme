@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from database import init_db, db
 from models import Usuario, Canal, Favorito, Progresso
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc
 
@@ -16,6 +17,12 @@ app = Flask(__name__)
 app.secret_key = 'supersecretkey'  # Troque em produção
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configuração para upload de imagens
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 init_db(app)
 
@@ -70,6 +77,9 @@ def buscar_episodio(series_id, temporada, episodio):
     except Exception as e:
         logger.error(f"Erro na busca do episódio: {e}")
         return 'Sinopse não encontrada'
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ---------- Funções auxiliares para carregar JSON ----------
 def carregar_json_no_banco():
@@ -153,16 +163,12 @@ def admin_required(f):
 
 # ---------- Context processor ----------
 @app.context_processor
-def inject_user():
+def inject_user_and_now():
+    from datetime import datetime
     if 'usuario_id' in session:
         usuario = Usuario.query.get(session['usuario_id'])
-        return dict(usuario_atual=usuario)
-    return dict(usuario_atual=None)
-
-# ---------- Função para filtrar adultos ----------
-def filtrar_adultos(query):
-    """Exclui itens com categoria 'Adultos'."""
-    return query.filter((Canal.categoria != 'Adultos') | (Canal.categoria.is_(None)))
+        return dict(usuario_atual=usuario, now=datetime.utcnow)
+    return dict(usuario_atual=None, now=datetime.utcnow)
 
 # ---------- Rotas principais ----------
 @app.route('/')
@@ -203,7 +209,6 @@ def register():
         is_admin = request.form.get('is_admin') == 'on'
 
         if Usuario.query.filter_by(email=email).first():
-            # Redireciona de volta para admin com mensagem de erro
             return redirect(url_for('admin', erro='Email já cadastrado'))
 
         hash_senha = generate_password_hash(senha)
@@ -221,7 +226,6 @@ def register():
         db.session.add(usuario)
         db.session.commit()
         return redirect(url_for('admin'))
-    # Se for GET, redireciona para admin (não deveria ser acessado diretamente)
     return redirect(url_for('admin'))
 
 @app.route('/logout')
@@ -241,7 +245,6 @@ def filmes():
         return redirect(url_for('login'))
     return render_template('filmes.html')
 
-# ==================== ROTAS DE DETALHE COM CACHE E FILTRO ADULTOS ====================
 @app.route('/serie/<nome>')
 def serie_detalhe(nome):
     if 'usuario_id' not in session:
@@ -252,24 +255,21 @@ def serie_detalhe(nome):
     if not episodios:
         return redirect(url_for('series'))
 
-    # Verifica se algum episódio é adulto (se a série for adulta, todos os episódios provavelmente são)
+    # Verifica se algum episódio é adulto
     if any(ep.categoria == 'Adultos' for ep in episodios):
-        abort(404)  # ou redireciona para página de erro
+        abort(404)
 
-    # Usa o primeiro episódio como referência para dados da série
     serie_principal = episodios[0]
     sinopse_geral = serie_principal.sinopse_geral
     poster_serie = serie_principal.logo
     series_id = serie_principal.tmdb_id
 
-    # Se não tem sinopse geral ou ID, busca na TMDB e salva
     if not sinopse_geral or not series_id:
         dados_serie = buscar_serie_por_titulo(nome)
         if dados_serie.get('id'):
             series_id = dados_serie['id']
             sinopse_geral = dados_serie.get('sinopse', 'Sinopse não disponível')
             poster_serie = dados_serie.get('poster') or serie_principal.logo
-            # Atualiza todos os episódios da série
             for ep in episodios:
                 ep.tmdb_id = series_id
                 ep.sinopse_geral = sinopse_geral
@@ -277,7 +277,6 @@ def serie_detalhe(nome):
         else:
             sinopse_geral = 'Sinopse não encontrada'
 
-    # Para cada episódio, verifica sinopse individual
     for ep in episodios:
         if not ep.sinopse_episodio and series_id and ep.temporada and ep.episodio:
             sinopse_ep = buscar_episodio(series_id, ep.temporada, ep.episodio)
@@ -286,7 +285,6 @@ def serie_detalhe(nome):
         elif not ep.sinopse_episodio:
             ep.sinopse_episodio = 'Sinopse não disponível'
 
-    # Organiza por temporadas
     temporadas = {}
     for ep in episodios:
         temp = ep.temporada
@@ -329,32 +327,76 @@ def play(id):
         abort(404)
     proximo = None
     if canal.tipo == 'serie' and canal.serie_nome and canal.temporada is not None and canal.episodio is not None:
-        # Ao buscar próximo episódio, também filtrar adultos (embora já estejam filtrados)
         proximo = Canal.query.filter(
             Canal.tipo == 'serie',
             Canal.serie_nome == canal.serie_nome,
             ((Canal.temporada == canal.temporada) & (Canal.episodio > canal.episodio)) |
             ((Canal.temporada == canal.temporada + 1) & (Canal.episodio == 1)),
-            Canal.categoria != 'Adultos'  # segurança extra
+            Canal.categoria != 'Adultos'
         ).order_by(Canal.temporada, Canal.episodio).first()
     return render_template('player.html', canal=canal, proximo_episodio=proximo)
 
-@app.route('/favoritos')
-def favoritos():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-    usuario_id = session['usuario_id']
-    favs = Favorito.query.filter_by(usuario_id=usuario_id).all()
-    # Filtrar favoritos adultos (opcional, mas por segurança)
-    favs = [f for f in favs if f.canal and f.canal.categoria != 'Adultos']
-    return render_template('favoritos.html', favoritos=favs)
-
-@app.route('/perfil')
+@app.route('/perfil', methods=['GET', 'POST'])
 def perfil():
     if 'usuario_id' not in session:
         return redirect(url_for('login'))
     usuario = Usuario.query.get(session['usuario_id'])
-    return render_template('perfil.html', usuario=usuario)
+
+    if request.method == 'POST':
+        if 'profile_pic' in request.files:
+            file = request.files['profile_pic']
+            if file and file.filename != '' and allowed_file(file.filename):
+                # Remove a foto antiga se existir
+                if usuario.profile_pic:
+                    old_file = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(usuario.profile_pic))
+                    if os.path.exists(old_file):
+                        os.remove(old_file)
+                filename = secure_filename(f"user_{usuario.id}_{file.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                usuario.profile_pic = f"uploads/{filename}"
+                db.session.commit()
+                return redirect(url_for('perfil'))
+
+    # Separa favoritos por tipo com agrupamento
+    favoritos_filmes = []
+    favoritos_series_map = {}
+
+    for fav in usuario.favoritos:
+        if fav.canal and fav.canal.categoria != 'Adultos':
+            if fav.canal.tipo == 'filme':
+                favoritos_filmes.append(fav.canal)
+            elif fav.canal.tipo == 'serie' and fav.canal.serie_nome:
+                # Agrupa por nome da série, mantendo o primeiro episódio encontrado como representante
+                if fav.canal.serie_nome not in favoritos_series_map:
+                    favoritos_series_map[fav.canal.serie_nome] = fav.canal
+
+    favoritos_series = list(favoritos_series_map.values())
+
+    # Horas assistidas
+    total_segundos = db.session.query(func.sum(Progresso.tempo)).filter_by(usuario_id=usuario.id).scalar() or 0
+    horas_assistidas = total_segundos // 3600
+
+    # Log para depuração
+    print(f"Favoritos filmes: {len(favoritos_filmes)}")
+    print(f"Favoritos séries: {len(favoritos_series)}")
+    for s in favoritos_series:
+        print(f"Série: {s.serie_nome}, ID representante: {s.id}")
+
+    return render_template('perfil.html',
+                           usuario=usuario,
+                           favoritos_filmes=favoritos_filmes,
+                           favoritos_series=favoritos_series,
+                           horas_assistidas=horas_assistidas)
+
+@app.route('/favoritos')
+def favoritos():
+    # Esta rota não será mais usada (substituída pelo perfil), mas mantida por compatibilidade
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+    usuario_id = session['usuario_id']
+    favs = Favorito.query.filter_by(usuario_id=usuario_id).all()
+    return render_template('favoritos.html', favoritos=favs)
 
 @app.route('/busca')
 def busca():
@@ -365,7 +407,8 @@ def busca():
 @app.route('/admin')
 @admin_required
 def admin():
-    return render_template('admin.html')
+    erro = request.args.get('erro')
+    return render_template('admin.html', erro_cadastro=erro)
 
 @app.route('/api/admin/estatisticas')
 @admin_required
@@ -464,7 +507,10 @@ def admin_editar_usuario(usuario_id):
         db.session.commit()
         return jsonify({'status': 'ok'})
 
-# ---------- API ----------
+# ---------- API (para os templates) ----------
+def filtrar_adultos(query):
+    return query.filter((Canal.categoria != 'Adultos') | (Canal.categoria.is_(None)))
+
 def get_random_items(tipo, limite=15, ano=None):
     from sqlalchemy.sql.expression import func
     query = Canal.query.filter_by(tipo=tipo)
@@ -482,8 +528,6 @@ def get_mais_assistidos_global(limite=5):
     query = db.session.query(Canal, progress_counts.c.total).join(
         progress_counts, Canal.id == progress_counts.c.canal_id
     )
-
-    # Aplicar filtro de adultos antes de processar
     query = filtrar_adultos(query)
 
     filmes = query.filter(Canal.tipo == 'filme').order_by(desc(progress_counts.c.total)).all()
@@ -513,7 +557,6 @@ def api_mais_assistidos():
     return jsonify([c.serialize() for c in itens])
 
 def get_recentemente_assistidos(usuario_id, limite=15):
-    # Subconsulta para séries, já filtrando adultos
     subquery_series = db.session.query(
         Progresso.canal_id,
         Progresso.data_atualizacao,
@@ -524,7 +567,7 @@ def get_recentemente_assistidos(usuario_id, limite=15):
     ).join(Canal, Progresso.canal_id == Canal.id).filter(
         Progresso.usuario_id == usuario_id,
         Canal.tipo == 'serie',
-        Canal.categoria != 'Adultos'  # filtrar adultos
+        Canal.categoria != 'Adultos'
     ).subquery()
 
     series_recentes = db.session.query(Progresso).join(
@@ -533,7 +576,6 @@ def get_recentemente_assistidos(usuario_id, limite=15):
         (subquery_series.c.rn == 1)
     ).all()
 
-    # Outros tipos (filmes, tv, radio) filtrando adultos
     outros = Progresso.query.join(Canal).filter(
         Progresso.usuario_id == usuario_id,
         Canal.tipo != 'serie',
@@ -591,11 +633,8 @@ def api_filmes_lista():
 
 @app.route('/api/series/categoria/<categoria>')
 def api_series_categoria(categoria):
-    # Primeiro, obter os ids dos episódios que representam a série, já filtrando adultos
     subquery = db.session.query(Canal.serie_nome, func.min(Canal.id).label('id')).filter(
-        Canal.tipo == 'serie',
-        Canal.categoria == categoria,
-        Canal.categoria != 'Adultos'  # redundante, mas seguro
+        Canal.tipo == 'serie', Canal.categoria == categoria
     ).group_by(Canal.serie_nome).subquery()
     query = db.session.query(Canal).join(subquery, Canal.id == subquery.c.id)
     query = filtrar_adultos(query)
@@ -609,8 +648,7 @@ def api_series_lancamento():
         func.min(Canal.id).label('id')
     ).filter(
         Canal.tipo == 'serie',
-        Canal.ano_lancamento == '2026',
-        Canal.categoria != 'Adultos'
+        Canal.ano_lancamento == '2026'
     ).group_by(Canal.serie_nome).subquery()
     query = db.session.query(Canal).join(subquery, Canal.id == subquery.c.id)
     query = filtrar_adultos(query)
@@ -642,7 +680,6 @@ def api_series_lista():
 @app.route('/api/filmes/categorias')
 def api_filmes_categorias():
     categorias = db.session.query(Canal.categoria).filter_by(tipo='filme').distinct().all()
-    # Filtrar "Adultos" das categorias listadas
     return jsonify([c[0] for c in categorias if c[0] and c[0] != 'Adultos'])
 
 @app.route('/api/series/categorias')
@@ -714,7 +751,6 @@ def api_busca():
     if not termo:
         return jsonify({'itens': [], 'total': 0, 'pagina': 1, 'total_paginas': 1})
 
-    # Agrupar séries (apenas as que correspondem ao termo e não são adultas)
     subquery_series = db.session.query(
         Canal.serie_nome,
         func.min(Canal.id).label('id')
@@ -728,7 +764,6 @@ def api_busca():
         subquery_series, Canal.id == subquery_series.c.id
     ).all()
 
-    # Filmes, TV, rádio (filtrando adultos)
     outros = Canal.query.filter(
         Canal.tipo.in_(['filme', 'tv', 'radio']),
         Canal.nome.ilike(f'%{termo}%'),
@@ -772,9 +807,17 @@ def favoritar(canal_id):
         return jsonify({'erro': 'Não autenticado'}), 401
     usuario_id = session['usuario_id']
     canal = Canal.query.get_or_404(canal_id)
-    # Impedir favoritar conteúdo adulto (opcional)
     if canal.categoria == 'Adultos':
         return jsonify({'erro': 'Conteúdo não disponível'}), 403
+
+    # Se for série, usamos o ID do primeiro episódio como representante (ou qualquer um)
+    if canal.tipo == 'serie':
+        # Busca o primeiro episódio da série (menor ID) para usar como representante
+        representante = Canal.query.filter_by(tipo='serie', serie_nome=canal.serie_nome).order_by(Canal.id).first()
+        if not representante:
+            return jsonify({'erro': 'Série não encontrada'}), 404
+        canal_id = representante.id
+
     existe = Favorito.query.filter_by(usuario_id=usuario_id, canal_id=canal_id).first()
     if existe:
         db.session.delete(existe)
@@ -792,16 +835,30 @@ def api_favoritos():
         return jsonify({'erro': 'Não autenticado'}), 401
     usuario_id = session['usuario_id']
     favs = Favorito.query.filter_by(usuario_id=usuario_id).all()
-    # Filtrar favoritos adultos (embora não devam existir)
-    favs = [f for f in favs if f.canal and f.canal.categoria != 'Adultos']
-    return jsonify([f.canal.serialize() for f in favs if f.canal])
+
+    filmes = []
+    series_map = {}
+
+    for fav in favs:
+        if not fav.canal or fav.canal.categoria == 'Adultos':
+            continue
+        if fav.canal.tipo == 'filme':
+            filmes.append(fav.canal)
+        elif fav.canal.tipo == 'serie' and fav.canal.serie_nome:
+            if fav.canal.serie_nome not in series_map:
+                series_map[fav.canal.serie_nome] = fav.canal
+
+    series = list(series_map.values())
+    resultados = filmes + series
+    resultados.sort(key=lambda x: x.nome)
+
+    return jsonify([c.serialize() for c in resultados])
 
 # ---------- Progresso ----------
 @app.route('/progresso/<int:canal_id>', methods=['POST'])
 def salvar_progresso(canal_id):
     if 'usuario_id' not in session:
         return jsonify({'erro': 'Não autenticado'}), 401
-    # Verificar se o canal é adulto (não deve salvar progresso)
     canal = Canal.query.get(canal_id)
     if canal and canal.categoria == 'Adultos':
         return jsonify({'erro': 'Conteúdo não disponível'}), 403

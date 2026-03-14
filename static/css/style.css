@@ -13,6 +13,22 @@ body {
 }
 
 /* ===== NAVBAR ===== */
+.nav-menu li a .profile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e50914;
+}
+
+/* ===== PÁGINA DE PERFIL ===== */
+.profile-avatar-large {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #e50914;
+}
 .navbar {
     position: fixed;
     top: 0;
@@ -1741,4 +1757,159 @@ main {
     transform: scale(1.05);
     background: rgba(229, 9, 20, 0.2);
     border-color: #e50914;
+}
+
+/* ===== TABELA DE USUÁRIOS - VERSÃO MOBILE ===== */
+@media (max-width: 768px) {
+    .table-responsive {
+        border: none;
+    }
+    .tabela-usuarios {
+        min-width: 100%;
+        border-collapse: collapse;
+    }
+    .tabela-usuarios thead {
+        display: none; /* Esconde o cabeçalho */
+    }
+    .tabela-usuarios tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        background: #1a1a1a;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid #333;
+    }
+    .tabela-usuarios tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #333;
+        text-align: right;
+    }
+    .tabela-usuarios tbody td:last-child {
+        border-bottom: none;
+    }
+    .tabela-usuarios tbody td::before {
+        content: attr(data-label); /* Usa o atributo data-label para mostrar o nome da coluna */
+        font-weight: bold;
+        color: #ccc;
+        text-align: left;
+        flex: 1;
+    }
+    .acoes {
+        justify-content: flex-end;
+    }
+}
+
+/* ===== PÁGINA DE PERFIL ===== */
+.profile-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.profile-header {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+    background: #1a1a1a;
+    padding: 2rem;
+    border-radius: 8px;
+}
+
+.profile-avatar-container {
+    position: relative;
+    width: 150px;
+    height: 150px;
+}
+
+.profile-avatar-large {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #e50914;
+}
+
+.avatar-upload-form {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+.avatar-upload-form .btn-small {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 30px;
+}
+
+.profile-info h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.profile-email {
+    color: #ccc;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.profile-expira {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ddd;
+    margin-bottom: 0.5rem;
+}
+
+.profile-expira.expirado {
+    color: #e50914;
+    font-weight: bold;
+}
+
+.badge-expirado {
+    background: #e50914;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.profile-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ddd;
+}
+
+.profile-favorites {
+    margin-top: 2rem;
+}
+
+.profile-favorites .section-title {
+    margin-top: 2rem;
+}
+
+.empty-message {
+    color: #888;
+    font-size: 1rem;
+    padding: 2rem;
+    text-align: center;
+    background: #1a1a1a;
+    border-radius: 8px;
+}
+
+/* Ajustes para mobile */
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .profile-info h1 {
+        font-size: 2rem;
+    }
 }
