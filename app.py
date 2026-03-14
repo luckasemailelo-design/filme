@@ -7,7 +7,7 @@ import string
 import requests
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, Response, abort
 from database import init_db, db
-from models import Usuario, Canal, Favorito, Progresso
+from models import Usuario, Canal, Favorito, Progresso, AdminLog
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
@@ -225,8 +225,28 @@ def register():
         )
         db.session.add(usuario)
         db.session.commit()
+
+        # Registrar log da ação
+        registrar_log_admin(
+            acao='cadastro',
+            usuario_afetado_id=usuario.id,
+            descricao=f'Dias: {dias}, Admin: {is_admin}'
+        )
+
         return redirect(url_for('admin'))
     return redirect(url_for('admin'))
+
+def registrar_log_admin(acao, usuario_afetado_id=None, descricao=''):
+    if 'usuario_id' in session:
+        admin_id = session['usuario_id']
+        log = AdminLog(
+            admin_id=admin_id,
+            acao=acao,
+            usuario_afetado_id=usuario_afetado_id,
+            descricao=descricao
+        )
+        db.session.add(log)
+        db.session.commit()
 
 @app.route('/logout')
 def logout():
@@ -484,6 +504,7 @@ def admin_resetar_senha(usuario_id):
 @admin_required
 def admin_editar_usuario(usuario_id):
     usuario = Usuario.query.get_or_404(usuario_id)
+    
     if request.method == 'GET':
         return jsonify({
             'id': usuario.id,
@@ -493,19 +514,54 @@ def admin_editar_usuario(usuario_id):
             'ativo': usuario.ativo,
             'expira_em': usuario.expira_em.strftime('%Y-%m-%d') if usuario.expira_em else None
         })
-    else:
-        data = request.get_json()
-        usuario.nome = data.get('nome', usuario.nome)
-        usuario.email = data.get('email', usuario.email)
-        usuario.is_admin = data.get('is_admin', usuario.is_admin)
-        usuario.ativo = data.get('ativo', usuario.ativo)
-        dias = data.get('dias')
-        if dias is not None and dias > 0:
+    
+    # POST - atualizar usuário
+    data = request.get_json()
+    if not data:
+        return jsonify({'erro': 'Dados não fornecidos'}), 400
+
+    usuario.nome = data.get('nome', usuario.nome)
+    usuario.email = data.get('email', usuario.email)
+    usuario.is_admin = data.get('is_admin', usuario.is_admin)
+    usuario.ativo = data.get('ativo', usuario.ativo)
+    
+    dias = data.get('dias')
+    if dias is not None:
+        if dias > 0:
             usuario.expira_em = datetime.utcnow() + timedelta(days=dias)
-        elif dias == 0:
+        else:
             usuario.expira_em = None
-        db.session.commit()
-        return jsonify({'status': 'ok'})
+    
+    db.session.commit()
+    
+    # Registrar log
+    registrar_log_admin(
+        acao='edicao',
+        usuario_afetado_id=usuario.id,
+        descricao=f'Dias: {dias}, Admin: {usuario.is_admin}, Ativo: {usuario.ativo}'
+    )
+    
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/logs')
+@admin_required
+def api_admin_logs():
+    pagina = int(request.args.get('pagina', 1))
+    por_pagina = 20
+    logs = AdminLog.query.order_by(AdminLog.data_hora.desc()).paginate(page=pagina, per_page=por_pagina, error_out=False)
+    return jsonify({
+        'itens': [{
+            'id': l.id,
+            'admin': l.admin.nome if l.admin else 'Desconhecido',
+            'acao': l.acao,
+            'usuario_afetado': l.usuario_afetado.nome if l.usuario_afetado else None,
+            'descricao': l.descricao,
+            'data_hora': l.data_hora.strftime('%d/%m/%Y %H:%M')
+        } for l in logs.items],
+        'total': logs.total,
+        'pagina': pagina,
+        'total_paginas': logs.pages
+    })
 
 # ---------- API (para os templates) ----------
 def filtrar_adultos(query):

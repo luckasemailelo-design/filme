@@ -46,3 +46,14 @@ class Progresso(db.Model):
     duracao = db.Column(db.Integer)
     data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow)
     canal = db.relationship('Canal')
+
+class AdminLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
+    acao = db.Column(db.String(100))  # Ex: 'cadastro', 'edicao', 'banimento', 'reset_senha'
+    usuario_afetado_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
+    descricao = db.Column(db.Text)
+    data_hora = db.Column(db.DateTime, default=datetime.utcnow)
+
+    admin = db.relationship('Usuario', foreign_keys=[admin_id])
+    usuario_afetado = db.relationship('Usuario', foreign_keys=[usuario_afetado_id])

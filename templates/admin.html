@@ -36,9 +36,10 @@
         </div>
     </div>
 
-    <!-- Botão de cadastro e pesquisa -->
+    <!-- Botões de ação -->
     <div class="admin-actions">
         <button class="btn" id="btn-cadastrar"><i class="fas fa-plus"></i> Cadastro de Usuário</button>
+        <button class="btn btn-outline" id="btn-registro"><i class="fas fa-history"></i> Registro de Ações</button>
         <div class="search-wrapper">
             <input type="text" id="search-usuario" class="search-input" placeholder="Pesquisar usuário...">
             <button class="search-btn" id="btn-pesquisar">Pesquisar</button>
@@ -140,14 +141,49 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Registro de Ações -->
+<div id="modal-registro" style="display: none;">
+    <div class="modal-overlay">
+        <div class="auth-card modal-card" style="max-width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Registro de Ações Administrativas</h2>
+                <button class="btn-acao" onclick="fecharModalRegistro()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="table-responsive">
+                <table class="tabela-usuarios">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Admin</th>
+                            <th>Ação</th>
+                            <th>Usuário Afetado</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-list">
+                        <!-- Será preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="load-more-container">
+                <button id="load-more-logs" class="btn btn-outline" style="display: none;">Carregar Mais</button>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-outline" onclick="fecharModalRegistro()">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
     let currentPage = 1;
     let currentBusca = '';
+    let logsPage = 1;
 
-    // Função para carregar estatísticas
+    // ==================== ESTATÍSTICAS ====================
     function carregarEstatisticas() {
         fetch('/api/admin/estatisticas')
             .then(res => res.json())
@@ -156,10 +192,11 @@
                 document.getElementById('stat-total-usuarios').textContent = data.total_usuarios;
                 document.getElementById('stat-horas').textContent = data.total_horas;
                 document.getElementById('stat-admins').textContent = data.total_admins;
-            });
+            })
+            .catch(err => console.error('Erro ao carregar estatísticas:', err));
     }
 
-    // Função para carregar usuários
+    // ==================== USUÁRIOS ====================
     function carregarUsuarios(pagina) {
         let url = `/api/admin/usuarios?pagina=${pagina}`;
         if (currentBusca) {
@@ -201,10 +238,11 @@
                 } else {
                     btn.style.display = 'none';
                 }
-            });
+            })
+            .catch(err => console.error('Erro ao carregar usuários:', err));
     }
 
-    // Ações
+    // ==================== AÇÕES ====================
     window.banirUsuario = function(id, ativo) {
         if (!confirm(`Tem certeza que deseja ${ativo ? 'banir' : 'ativar'} este usuário?`)) return;
         fetch(`/api/admin/usuarios/${id}/banir`, { method: 'POST' })
@@ -216,7 +254,8 @@
                 } else {
                     alert('Erro: ' + data.erro);
                 }
-            });
+            })
+            .catch(err => console.error('Erro:', err));
     };
 
     window.excluirUsuario = function(id) {
@@ -230,7 +269,8 @@
                 } else {
                     alert('Erro: ' + data.erro);
                 }
-            });
+            })
+            .catch(err => console.error('Erro:', err));
     };
 
     window.resetarSenha = function(id) {
@@ -243,10 +283,11 @@
                 } else {
                     alert('Erro: ' + data.erro);
                 }
-            });
+            })
+            .catch(err => console.error('Erro:', err));
     };
 
-    // Editar usuário
+    // ==================== EDIÇÃO DE USUÁRIO ====================
     window.editarUsuario = function(id) {
         fetch(`/api/admin/usuarios/${id}`)
             .then(res => res.json())
@@ -256,29 +297,39 @@
                 document.getElementById('edit-email').value = data.email;
                 document.getElementById('edit-is_admin').checked = data.is_admin;
                 document.getElementById('edit-ativo').checked = data.ativo;
+                
                 const diasInput = document.getElementById('edit-dias');
                 if (data.expira_em) {
-                    const exp = new Date(data.expira_em.split('-').join('/') + 'T00:00:00');
                     const hoje = new Date();
-                    const diff = Math.floor((exp - hoje) / (1000*60*60*24));
-                    diasInput.value = diff > 0 ? diff : 0;
+                    const exp = new Date(data.expira_em + 'T00:00:00');
+                    const diffTime = exp - hoje;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    diasInput.value = diffDays > 0 ? diffDays : 0;
                 } else {
                     diasInput.value = 0;
                 }
                 document.getElementById('modal-editar').style.display = 'block';
+            })
+            .catch(err => {
+                console.error('Erro ao carregar dados do usuário:', err);
+                alert('Erro ao carregar dados do usuário.');
             });
     };
 
     document.getElementById('form-editar').addEventListener('submit', function(e) {
         e.preventDefault();
+        
         const id = document.getElementById('edit-id').value;
+        const dias = parseInt(document.getElementById('edit-dias').value) || 0;
+        
         const data = {
             nome: document.getElementById('edit-nome').value,
             email: document.getElementById('edit-email').value,
             is_admin: document.getElementById('edit-is_admin').checked,
             ativo: document.getElementById('edit-ativo').checked,
-            dias: parseInt(document.getElementById('edit-dias').value) || 0
+            dias: dias
         };
+        
         fetch(`/api/admin/usuarios/${id}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -291,8 +342,12 @@
                 document.getElementById('modal-editar').style.display = 'none';
                 carregarUsuarios(1);
             } else {
-                alert('Erro ao atualizar.');
+                alert('Erro ao atualizar: ' + (data.erro || 'erro desconhecido'));
             }
+        })
+        .catch(err => {
+            console.error('Erro na requisição:', err);
+            alert('Erro de rede ao atualizar.');
         });
     });
 
@@ -300,7 +355,46 @@
         document.getElementById('modal-editar').style.display = 'none';
     });
 
-    // Inicialização
+    // ==================== LOGS ====================
+    function carregarLogs(pagina) {
+        fetch(`/api/admin/logs?pagina=${pagina}`)
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('logs-list');
+                if (pagina === 1) tbody.innerHTML = '';
+                data.itens.forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${log.data_hora}</td>
+                        <td>${log.admin}</td>
+                        <td>${log.acao}</td>
+                        <td>${log.usuario_afetado || '-'}</td>
+                        <td>${log.descricao || '-'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                const btn = document.getElementById('load-more-logs');
+                if (data.pagina < data.total_paginas) {
+                    btn.style.display = 'block';
+                    btn.dataset.page = data.pagina + 1;
+                } else {
+                    btn.style.display = 'none';
+                }
+            })
+            .catch(err => console.error('Erro ao carregar logs:', err));
+    }
+
+    function abrirModalRegistro() {
+        logsPage = 1;
+        carregarLogs(1);
+        document.getElementById('modal-registro').style.display = 'block';
+    }
+
+    function fecharModalRegistro() {
+        document.getElementById('modal-registro').style.display = 'none';
+    }
+
+    // ==================== INICIALIZAÇÃO ====================
     document.addEventListener('DOMContentLoaded', function() {
         carregarEstatisticas();
         carregarUsuarios(1);
@@ -308,6 +402,12 @@
         document.getElementById('load-more').addEventListener('click', function() {
             const nextPage = parseInt(this.dataset.page);
             carregarUsuarios(nextPage);
+        });
+
+        document.getElementById('load-more-logs').addEventListener('click', function() {
+            const nextPage = parseInt(this.dataset.page);
+            logsPage = nextPage;
+            carregarLogs(nextPage);
         });
 
         const btnCadastrar = document.getElementById('btn-cadastrar');
@@ -319,6 +419,8 @@
         cancelar.addEventListener('click', () => {
             formDiv.style.display = 'none';
         });
+
+        document.getElementById('btn-registro').addEventListener('click', abrirModalRegistro);
 
         const searchInput = document.getElementById('search-usuario');
         const searchBtn = document.getElementById('btn-pesquisar');
