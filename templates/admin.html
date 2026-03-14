@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}Painel Administrativo{% endblock %}
+{% block content %}
+<div class="admin-container">
+    <h1 class="section-title">Painel Administrativo</h1>
+
+    <!-- Cards de estatísticas -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <div class="stat-info">
+                <span class="stat-value" id="stat-online">0</span>
+                <span class="stat-label">Pessoas online</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-user-plus"></i>
+            <div class="stat-info">
+                <span class="stat-value" id="stat-total-usuarios">0</span>
+                <span class="stat-label">Usuários cadastrados</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-clock"></i>
+            <div class="stat-info">
+                <span class="stat-value" id="stat-horas">0</span>
+                <span class="stat-label">Horas de exibição</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-user-tie"></i>
+            <div class="stat-info">
+                <span class="stat-value" id="stat-admins">0</span>
+                <span class="stat-label">Administradores</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão de cadastro e pesquisa -->
+    <div class="admin-actions">
+        <button class="btn" id="btn-cadastrar"><i class="fas fa-plus"></i> Cadastro de Usuário</button>
+        <div class="search-wrapper">
+            <input type="text" id="search-usuario" class="search-input" placeholder="Pesquisar usuário...">
+            <button class="search-btn" id="btn-pesquisar">Pesquisar</button>
+        </div>
+    </div>
+
+    <!-- Formulário de cadastro (inicialmente oculto) -->
+    <div id="cadastro-form" style="display: none; margin-top: 2rem;">
+        <div class="auth-card">
+            <h2>Cadastrar Novo Usuário</h2>
+            <form id="form-cadastro" method="POST" action="{{ url_for('register') }}" class="auth-form">
+                <div class="form-group">
+                    <label for="nome">Nome</label>
+                    <input type="text" id="nome" name="nome" required placeholder="Nome completo">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required placeholder="email@exemplo.com">
+                </div>
+                <div class="form-group">
+                    <label for="senha">Senha</label>
+                    <input type="password" id="senha" name="senha" required placeholder="••••••••">
+                </div>
+                <div class="form-group">
+                    <label for="dias">Dias de validade (deixe em branco para ilimitado)</label>
+                    <input type="number" id="dias" name="dias" min="1" placeholder="Ex: 30">
+                </div>
+                <div class="form-group checkbox">
+                    <input type="checkbox" id="is_admin" name="is_admin">
+                    <label for="is_admin">Administrador?</label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn">Registrar</button>
+                    <button type="button" class="btn btn-outline" id="cancelar-cadastro">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de usuários -->
+    <h2 style="margin-top: 2rem;">Usuários Cadastrados</h2>
+    <div class="table-responsive">
+        <table class="tabela-usuarios">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Expira em</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="usuarios-list">
+                <!-- Será preenchido via JS -->
+            </tbody>
+        </table>
+    </div>
+    <div class="load-more-container">
+        <button id="load-more" class="btn btn-outline" style="display: none;">Carregar Mais</button>
+    </div>
+</div>
+
+<!-- Modal de Edição -->
+<div id="modal-editar" style="display: none;">
+    <div class="modal-overlay">
+        <div class="auth-card modal-card">
+            <h2>Editar Usuário</h2>
+            <form id="form-editar" class="auth-form">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label for="edit-nome">Nome</label>
+                    <input type="text" id="edit-nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-email">Email</label>
+                    <input type="email" id="edit-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-dias">Dias de validade (0 para ilimitado)</label>
+                    <input type="number" id="edit-dias" min="0" placeholder="Ex: 30">
+                </div>
+                <div class="form-group checkbox">
+                    <input type="checkbox" id="edit-is_admin">
+                    <label for="edit-is_admin">Administrador?</label>
+                </div>
+                <div class="form-group checkbox">
+                    <input type="checkbox" id="edit-ativo">
+                    <label for="edit-ativo">Ativo?</label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn">Salvar</button>
+                    <button type="button" class="btn btn-outline" id="cancelar-editar">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentPage = 1;
+    let currentBusca = '';
+
+    // Carregar estatísticas
+    function carregarEstatisticas() {
+        fetch('/api/admin/estatisticas')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('stat-online').textContent = data.online;
+                document.getElementById('stat-total-usuarios').textContent = data.total_usuarios;
+                document.getElementById('stat-horas').textContent = data.total_horas;
+                document.getElementById('stat-admins').textContent = data.total_admins;
+            });
+    }
+
+    // Carregar lista de usuários
+    function carregarUsuarios(pagina) {
+        let url = `/api/admin/usuarios?pagina=${pagina}`;
+        if (currentBusca) {
+            url += `&busca=${encodeURIComponent(currentBusca)}`;
+        }
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('usuarios-list');
+                if (pagina === 1) tbody.innerHTML = '';
+                data.itens.forEach(usuario => {
+                    const tr = document.createElement('tr');
+                    const expiraEm = usuario.expira_em ? usuario.expira_em.split('/') : null;
+                    const hoje = new Date();
+                    const expirado = expiraEm && new Date(expiraEm[2], expiraEm[1]-1, expiraEm[0]) < hoje && !usuario.is_admin;
+                    const badgeClass = usuario.is_admin ? 'badge-admin' : 'badge-user';
+                    const badgeText = usuario.is_admin ? 'Admin' : 'Usuário';
+                    const statusClass = usuario.ativo ? '' : 'expirado';
+                    const statusText = usuario.ativo ? 'Ativo' : 'Banido';
+                    tr.innerHTML = `
+                        <td>${usuario.nome}</td>
+                        <td>${usuario.email}</td>
+                        <td><span class="${badgeClass}">${badgeText}</span></td>
+                        <td class="${statusClass}">${statusText}</td>
+                        <td class="${expirado ? 'expirado' : ''}">${usuario.expira_em || 'Nunca'}${expirado ? ' (Expirado)' : ''}</td>
+                        <td class="acoes">
+                            <button class="btn-acao editar" onclick="editarUsuario(${usuario.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn-acao banir" onclick="banirUsuario(${usuario.id}, ${usuario.ativo})" title="${usuario.ativo ? 'Banir' : 'Ativar'}"><i class="fas fa-${usuario.ativo ? 'ban' : 'check'}"></i></button>
+                            <button class="btn-acao resetar" onclick="resetarSenha(${usuario.id})" title="Resetar senha"><i class="fas fa-key"></i></button>
+                            <button class="btn-acao excluir" onclick="excluirUsuario(${usuario.id})" title="Excluir"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                const btn = document.getElementById('load-more');
+                if (data.pagina < data.total_paginas) {
+                    btn.style.display = 'block';
+                    btn.dataset.page = data.pagina + 1;
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
+    }
+
+    // Ações
+    window.banirUsuario = function(id, ativo) {
+        if (!confirm(`Tem certeza que deseja ${ativo ? 'banir' : 'ativar'} este usuário?`)) return;
+        fetch(`/api/admin/usuarios/${id}/banir`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    alert('Usuário ' + (data.ativo ? 'ativado' : 'banido') + ' com sucesso.');
+                    carregarUsuarios(1);
+                } else {
+                    alert('Erro: ' + data.erro);
+                }
+            });
+    };
+
+    window.excluirUsuario = function(id) {
+        if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação é irreversível.')) return;
+        fetch(`/api/admin/usuarios/${id}/excluir`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    alert('Usuário excluído com sucesso.');
+                    carregarUsuarios(1);
+                } else {
+                    alert('Erro: ' + data.erro);
+                }
+            });
+    };
+
+    window.resetarSenha = function(id) {
+        if (!confirm('Deseja resetar a senha deste usuário? Uma nova senha aleatória será gerada.')) return;
+        fetch(`/api/admin/usuarios/${id}/resetar-senha`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    alert(`Nova senha: ${data.nova_senha}\nAnote esta senha e envie ao usuário.`);
+                } else {
+                    alert('Erro: ' + data.erro);
+                }
+            });
+    };
+
+    // Editar usuário
+    window.editarUsuario = function(id) {
+        fetch(`/api/admin/usuarios/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('edit-id').value = data.id;
+                document.getElementById('edit-nome').value = data.nome;
+                document.getElementById('edit-email').value = data.email;
+                document.getElementById('edit-is_admin').checked = data.is_admin;
+                document.getElementById('edit-ativo').checked = data.ativo;
+                const diasInput = document.getElementById('edit-dias');
+                if (data.expira_em) {
+                    const exp = new Date(data.expira_em.split('-').join('/') + 'T00:00:00');
+                    const hoje = new Date();
+                    const diff = Math.floor((exp - hoje) / (1000*60*60*24));
+                    diasInput.value = diff > 0 ? diff : 0;
+                } else {
+                    diasInput.value = 0;
+                }
+                document.getElementById('modal-editar').style.display = 'block';
+            });
+    };
+
+    document.getElementById('form-editar').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-id').value;
+        const data = {
+            nome: document.getElementById('edit-nome').value,
+            email: document.getElementById('edit-email').value,
+            is_admin: document.getElementById('edit-is_admin').checked,
+            ativo: document.getElementById('edit-ativo').checked,
+            dias: parseInt(document.getElementById('edit-dias').value) || 0
+        };
+        fetch(`/api/admin/usuarios/${id}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                alert('Usuário atualizado com sucesso.');
+                document.getElementById('modal-editar').style.display = 'none';
+                carregarUsuarios(1);
+            } else {
+                alert('Erro ao atualizar.');
+            }
+        });
+    });
+
+    document.getElementById('cancelar-editar').addEventListener('click', function() {
+        document.getElementById('modal-editar').style.display = 'none';
+    });
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarEstatisticas();
+        carregarUsuarios(1);
+
+        document.getElementById('load-more').addEventListener('click', function() {
+            const nextPage = parseInt(this.dataset.page);
+            carregarUsuarios(nextPage);
+        });
+
+        const btnCadastrar = document.getElementById('btn-cadastrar');
+        const formDiv = document.getElementById('cadastro-form');
+        const cancelar = document.getElementById('cancelar-cadastro');
+        btnCadastrar.addEventListener('click', () => {
+            formDiv.style.display = 'block';
+        });
+        cancelar.addEventListener('click', () => {
+            formDiv.style.display = 'none';
+        });
+
+        const searchInput = document.getElementById('search-usuario');
+        const searchBtn = document.getElementById('btn-pesquisar');
+        function performSearch() {
+            currentBusca = searchInput.value.trim();
+            currentPage = 1;
+            carregarUsuarios(1);
+        }
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+    });
+</script>
+{% endblock %}

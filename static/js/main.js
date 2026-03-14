@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Template para cards
 window.cardTemplate = function(item) {
-    const link = item.tipo === 'serie' && item.serie_nome 
+    const link = (item.tipo === 'serie' && item.serie_nome)
         ? `/serie/${encodeURIComponent(item.serie_nome)}`
         : `/play/${item.id}`;
     let extraInfo = '';

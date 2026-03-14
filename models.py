@@ -26,6 +26,9 @@ class Canal(db.Model):
     episodio = db.Column(db.Integer)
     categoria = db.Column(db.String(100))
     ano_lancamento = db.Column(db.String(4))
+    tmdb_id = db.Column(db.Integer, nullable=True)          # ID da série ou filme no TMDB
+    sinopse_geral = db.Column(db.Text, nullable=True)       # Sinopse do filme ou da série
+    sinopse_episodio = db.Column(db.Text, nullable=True)    # Sinopse do episódio (se aplicável)
 
 class Favorito(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,7 +41,7 @@ class Progresso(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
     canal_id = db.Column(db.Integer, db.ForeignKey('canal.id'))
-    tempo = db.Column(db.Integer)           # segundos assistidos
+    tempo = db.Column(db.Integer)
     duracao = db.Column(db.Integer)
     data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow)
     canal = db.relationship('Canal')

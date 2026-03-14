@@ -41,20 +41,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-    .detail-container { display: flex; gap: 2rem; margin: 2rem 0; flex-wrap: wrap; }
-    .detail-container .poster { flex: 0 0 300px; }
-    .detail-container .poster img { width: 100%; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-    .detail-container .info { flex: 1; min-width: 300px; }
-    .detail-container .info h1 { font-size: 2.5rem; margin-top: 0; }
-    .sinopse { font-size: 1.1rem; line-height: 1.6; color: #ddd; margin: 1.5rem 0; }
-    .episodio-item { display: flex; gap: 1.5rem; margin: 1rem 0; padding: 1rem; background: #1a1a1a; border-radius: 8px; flex-wrap: wrap; }
-    .episodio-poster { flex: 0 0 150px; }
-    .episodio-poster img { width: 100%; border-radius: 4px; }
-    .episodio-info { flex: 1; min-width: 250px; }
-    .episodio-info h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
-    .episodio-sinopse { font-size: 0.95rem; color: #bbb; margin: 0.5rem 0; }
-</style>
 <script>
     function toggleEpisodios(header) {
         const list = header.nextElementSibling;

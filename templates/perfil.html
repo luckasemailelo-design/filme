@@ -21,7 +21,5 @@
     fetch('/api/favoritos')
         .then(res => res.json())
         .then(data => document.getElementById('fav-count').textContent = data.length);
-    fetch('/api/progresso/total') // se existir, ou apenas deixe como está
-        .catch(() => {});
 </script>
 {% endblock %}

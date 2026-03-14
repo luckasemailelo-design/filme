@@ -24,35 +24,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-    /* Estilos para o hero */
-    .hero-section { margin-bottom: 3rem; }
-    .hero-container { position: relative; width: 100%; height: 70vh; max-height: 600px; background: #000; border-radius: 8px; overflow: hidden; }
-    .hero-item { position: relative; width: 100%; height: 100%; background-size: cover; background-position: center; display: flex; align-items: flex-end; padding: 3rem; color: white; text-decoration: none; }
-    .hero-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.2) 100%); z-index: 1; }
-    .hero-content { position: relative; z-index: 2; max-width: 600px; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
-    .hero-title { font-size: 3.5rem; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.2; letter-spacing: -0.5px; }
-    .hero-subtitle { font-size: 1.3rem; opacity: 0.9; margin-bottom: 1rem; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; }
-    .hero-badge { display: inline-block; background: rgba(229,9,20,0.9); color: white; padding: 0.3rem 1rem; border-radius: 30px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; text-transform: uppercase; }
-    .hero-btn { display: inline-block; background: #e50914; color: white; padding: 0.8rem 2.5rem; border-radius: 40px; text-decoration: none; font-weight: 600; font-size: 1.1rem; transition: background 0.2s, transform 0.1s; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    .hero-btn:hover { background: #f40612; transform: scale(1.05); }
-    .hero-indicators { position: absolute; bottom: 20px; right: 20px; z-index: 3; display: flex; gap: 10px; }
-    .hero-indicator { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: background 0.2s, transform 0.1s; }
-    .hero-indicator.active { background: #e50914; transform: scale(1.3); }
-    .hero-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; z-index: 3; display: flex; align-items: center; justify-content: center; transition: background 0.2s; backdrop-filter: blur(4px); }
-    .hero-arrow:hover { background: rgba(229,9,20,0.9); }
-    .hero-arrow.left { left: 20px; }
-    .hero-arrow.right { right: 20px; }
-    @media (max-width: 768px) {
-        .hero-container { height: 50vh; }
-        .hero-item { padding: 1.5rem; }
-        .hero-title { font-size: 2.2rem; }
-        .hero-subtitle { font-size: 1rem; }
-        .hero-btn { padding: 0.6rem 1.5rem; font-size: 0.9rem; }
-        .hero-arrow { width: 40px; height: 40px; font-size: 20px; }
-    }
-</style>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Carregar destaques
