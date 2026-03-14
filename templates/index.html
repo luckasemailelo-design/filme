@@ -26,6 +26,17 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Função auxiliar para recriar setas após carregar conteúdo
+        function atualizarSetas() {
+            if (typeof adicionarSetasScroll === 'function') {
+                setTimeout(() => {
+                    document.querySelectorAll('.horizontal-scroll').forEach(container => {
+                        adicionarSetasScroll(container);
+                    });
+                }, 50);
+            }
+        }
+
         // Carregar destaques
         fetch('/api/mais-assistidos')
             .then(res => res.json())
@@ -109,7 +120,7 @@
                 document.getElementById('hero-container').innerHTML = '<p class="error">Erro ao carregar destaques.</p>';
             });
 
-        // Carregar filmes e séries recomendadas e assistidos recentemente
+        // Carregar filmes recomendados, séries recomendadas e recentes
         fetch('/api/inicio')
             .then(res => res.json())
             .then(data => {
@@ -128,6 +139,7 @@
                 if (typeof carregarEstadoFavoritos === 'function') {
                     carregarEstadoFavoritos();
                 }
+                atualizarSetas();
             })
             .catch(err => {
                 console.error('Erro ao carregar recomendações:', err);
@@ -135,12 +147,6 @@
                     el.innerHTML = '<p class="error">Erro ao carregar.</p>';
                 });
             });
-
-        if (typeof adicionarSetasScroll === 'function') {
-            document.querySelectorAll('.horizontal-scroll').forEach(container => {
-                adicionarSetasScroll(container);
-            });
-        }
     });
 </script>
 {% endblock %}

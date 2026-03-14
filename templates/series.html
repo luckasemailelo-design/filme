@@ -80,12 +80,24 @@
     const sidebarClose = document.getElementById('sidebar-close');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
 
+    // Função para atualizar as setas de rolagem horizontal
+    function atualizarSetas() {
+        if (typeof adicionarSetasScroll === 'function') {
+            setTimeout(() => {
+                document.querySelectorAll('.horizontal-scroll').forEach(container => {
+                    adicionarSetasScroll(container);
+                });
+            }, 50);
+        }
+    }
+
     window.toggleAnoFilter = function(header) {
         header.classList.toggle('active');
         const options = document.getElementById('ano-filter');
         options.style.display = options.style.display === 'none' ? 'block' : 'none';
     };
 
+    // Carregar anos
     fetch('/api/series/anos')
         .then(res => res.json())
         .then(anos => {
@@ -97,6 +109,7 @@
             });
         });
 
+    // Carregar categorias
     fetch('/api/series/categorias')
         .then(res => res.json())
         .then(categorias => {
@@ -108,41 +121,52 @@
             });
         });
 
+    // Função para carregar seções fixas
     function carregarSecoesFixas() {
         fetch('/api/series/lancamento')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('lancamento').innerHTML = '';
-                data.forEach(item => document.getElementById('lancamento').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('lancamento');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         fetch('/api/series/categoria/Globoplay')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('globoplay').innerHTML = '';
-                data.forEach(item => document.getElementById('globoplay').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('globoplay');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         fetch('/api/series/categoria/Disney+')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('disney').innerHTML = '';
-                data.forEach(item => document.getElementById('disney').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('disney');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         fetch('/api/series/categoria/Animes')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('animes').innerHTML = '';
-                data.forEach(item => document.getElementById('animes').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('animes');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         fetch('/api/series/categoria/Doramas')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('doramas').innerHTML = '';
-                data.forEach(item => document.getElementById('doramas').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('doramas');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         carregarListaTodos(1);
     }
@@ -228,20 +252,45 @@
         carregarCategoria(currentCategoria, parseInt(this.dataset.page));
     });
 
+    // Controle da sidebar no mobile
     function isMobile() { return window.innerWidth <= 768; }
-    function openSidebar() { sidebar.classList.remove('closed'); sidebar.classList.add('open'); sidebarToggle.style.display = 'none'; }
-    function closeSidebar() { sidebar.classList.remove('open'); sidebar.classList.add('closed'); if (isMobile()) sidebarToggle.style.display = 'block'; }
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        sidebar.classList.remove('closed');
+        sidebarToggle.style.display = 'none';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        sidebar.classList.add('closed');
+        if (isMobile()) {
+            sidebarToggle.style.display = 'block';
+        }
+    }
+
+    // Estado inicial
     if (isMobile()) {
         sidebar.classList.add('closed');
+        sidebar.classList.remove('open');
         sidebarToggle.style.display = 'block';
-        sidebarToggle.addEventListener('click', openSidebar);
-        sidebarClose.addEventListener('click', closeSidebar);
     } else {
         sidebar.classList.remove('closed', 'open');
+        sidebarToggle.style.display = 'none';
     }
+
+    // Eventos
+    sidebarToggle.addEventListener('click', openSidebar);
+    sidebarClose.addEventListener('click', closeSidebar);
+
+    // Fechar ao clicar em um link de categoria ou ano (apenas no mobile)
     document.querySelectorAll('.categoria-link, .ano-link').forEach(link => {
-        link.addEventListener('click', function() { if (isMobile()) closeSidebar(); });
+        link.addEventListener('click', function() {
+            if (isMobile()) closeSidebar();
+        });
     });
+
+    // Ajustar ao redimensionar a tela
     window.addEventListener('resize', function() {
         if (window.innerWidth > 768) {
             sidebar.classList.remove('closed', 'open');
@@ -254,6 +303,8 @@
     });
 
     carregarSecoesFixas();
+
+    // Pesquisa
     window.setupSearch('search-input', 'search-btn', function(termo) {
         if (termo.trim() === '') return;
         window.location.href = `/busca?q=${encodeURIComponent(termo)}`;

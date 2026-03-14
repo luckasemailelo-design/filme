@@ -78,6 +78,16 @@
     const sidebarClose = document.getElementById('sidebar-close');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
 
+    function atualizarSetas() {
+        if (typeof adicionarSetasScroll === 'function') {
+            setTimeout(() => {
+                document.querySelectorAll('.horizontal-scroll').forEach(container => {
+                    adicionarSetasScroll(container);
+                });
+            }, 50);
+        }
+    }
+
     window.toggleAnoFilter = function(header) {
         header.classList.toggle('active');
         const options = document.getElementById('ano-filter');
@@ -110,30 +120,38 @@
         fetch('/api/filmes/lancamento')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('lancamento').innerHTML = '';
-                data.forEach(item => document.getElementById('lancamento').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('lancamento');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         fetch('/api/filmes/categoria/Comédia')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('comedia').innerHTML = '';
-                data.forEach(item => document.getElementById('comedia').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('comedia');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         fetch('/api/filmes/categoria/Thriller')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('acao').innerHTML = '';
-                data.forEach(item => document.getElementById('acao').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('acao');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         fetch('/api/filmes/categoria/Romance')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('romance').innerHTML = '';
-                data.forEach(item => document.getElementById('romance').insertAdjacentHTML('beforeend', window.cardTemplate(item)));
+                const container = document.getElementById('romance');
+                container.innerHTML = '';
+                data.forEach(item => container.insertAdjacentHTML('beforeend', window.cardTemplate(item)));
                 carregarEstadoFavoritos();
+                atualizarSetas();
             });
         carregarListaTodos(1);
     }
@@ -219,20 +237,41 @@
         carregarCategoria(currentCategoria, parseInt(this.dataset.page));
     });
 
+    // Controle da sidebar no mobile (idêntico ao series.html)
     function isMobile() { return window.innerWidth <= 768; }
-    function openSidebar() { sidebar.classList.remove('closed'); sidebar.classList.add('open'); sidebarToggle.style.display = 'none'; }
-    function closeSidebar() { sidebar.classList.remove('open'); sidebar.classList.add('closed'); if (isMobile()) sidebarToggle.style.display = 'block'; }
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        sidebar.classList.remove('closed');
+        sidebarToggle.style.display = 'none';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        sidebar.classList.add('closed');
+        if (isMobile()) {
+            sidebarToggle.style.display = 'block';
+        }
+    }
+
     if (isMobile()) {
         sidebar.classList.add('closed');
+        sidebar.classList.remove('open');
         sidebarToggle.style.display = 'block';
-        sidebarToggle.addEventListener('click', openSidebar);
-        sidebarClose.addEventListener('click', closeSidebar);
     } else {
         sidebar.classList.remove('closed', 'open');
+        sidebarToggle.style.display = 'none';
     }
+
+    sidebarToggle.addEventListener('click', openSidebar);
+    sidebarClose.addEventListener('click', closeSidebar);
+
     document.querySelectorAll('.categoria-link, .ano-link').forEach(link => {
-        link.addEventListener('click', function() { if (isMobile()) closeSidebar(); });
+        link.addEventListener('click', function() {
+            if (isMobile()) closeSidebar();
+        });
     });
+
     window.addEventListener('resize', function() {
         if (window.innerWidth > 768) {
             sidebar.classList.remove('closed', 'open');
@@ -245,6 +284,7 @@
     });
 
     carregarSecoesFixas();
+
     window.setupSearch('search-input', 'search-btn', function(termo) {
         if (termo.trim() === '') return;
         window.location.href = `/busca?q=${encodeURIComponent(termo)}`;
